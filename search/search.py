@@ -107,14 +107,54 @@ def depthFirstSearch(problem):
     return []
 
 def breadthFirstSearch(problem):
-    """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    #declare queue of unexplored nodes
+    unexploredNodes = util.Queue()
+
+    #initialize starting point
+    start = problem.getStartState()
+
+
+    unexploredNodes.push((start, []))
+
+    # Track visited nodes
+    visited = set()
+
+    while not unexploredNodes.isEmpty():
+        state, path = unexploredNodes.pop()
+
+        if problem.isGoalState(state):
+            return path
+
+        if state not in visited:
+            visited.add(state)
+            for succ, action, _ in problem.getSuccessors(state):
+                if succ not in visited:
+                    unexploredNodes.push((succ, path + [action]))
+
+    return []
 
 def uniformCostSearch(problem):
-    """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Priority queue for UCS: (state, path, cost)
+    unexploredNodes = util.PriorityQueue()
+    start = problem.getStartState()
+    unexploredNodes.push((start, [], 0), 0)
+    visited = {}
+
+    while not unexploredNodes.isEmpty():
+        state, path, cost = unexploredNodes.pop()
+
+        if problem.isGoalState(state):
+            return path
+
+        # Only expand if this is the lowest cost to this state seen so far
+        if state not in visited or cost < visited[state]:
+            visited[state] = cost
+            for succ, action, stepCost in problem.getSuccessors(state):
+                newCost = cost + stepCost
+                unexploredNodes.push((succ, path + [action], newCost), newCost)
+
+    return []
 
 def nullHeuristic(state, problem=None):
     """
