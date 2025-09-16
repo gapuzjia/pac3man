@@ -294,15 +294,16 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # State: (position, visitedCorners)
+        return (self.startingPosition, tuple([False]*4))
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Goal: all corners visited
+        _, visitedCorners = state
+        return all(visitedCorners)
 
     def getSuccessors(self, state):
         """
@@ -316,16 +317,18 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        position, visitedCorners = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Add a successor state to the successor list if the action is legal
-            # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
-
-            "*** YOUR CODE HERE ***"
-
+            x, y = position
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextPosition = (nextx, nexty)
+                nextVisitedCorners = list(visitedCorners)
+                for idx, corner in enumerate(self.corners):
+                    if nextPosition == corner:
+                        nextVisitedCorners[idx] = True
+                successors.append(((nextPosition, tuple(nextVisitedCorners)), action, 1))
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
