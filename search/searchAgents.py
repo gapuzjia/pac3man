@@ -347,23 +347,58 @@ class CornersProblem(search.SearchProblem):
 
 
 def cornersHeuristic(state, problem):
-    """
-    A heuristic for the CornersProblem that you defined.
 
-      state:   The current search state
-               (a data structure you chose in your search problem)
+    #corner coordinates
+    corners = problem.corners
 
-      problem: The CornersProblem instance for this layout.
+    #walls of the maze
+    walls = problem.walls
 
-    This function should always return a number that is a lower bound on the
-    shortest path from the state to a goal of the problem; i.e.  it should be
-    admissible (as well as consistent).
-    """
-    corners = problem.corners # These are the corner coordinates
-    walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
+    #state is (position, visitedCorners)
+    position, visited = state
 
-    "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    #list of unvisited corners
+    remaining = []
+    for idx, corner in enumerate(corners):
+        if not visited[idx]:
+            remaining.append(corner)
+
+    # no remaining corners -> heuristic is 0
+    if not remaining:
+        return 0
+
+    # helper: Manhattan distance
+    def md(p, q):
+        return util.manhattanDistance(p, q)
+
+    # distance from current position to closest remaining corner
+    min_to_corner = min(md(position, c) for c in remaining)
+
+    # compute MST (Prim) length over remaining corners using Manhattan distances
+    # since there are at most 4 corners, this is cheap
+    mst_cost = 0
+    nodes = set(remaining)
+    # start MST from an arbitrary node
+    visited_mst = set()
+    current = next(iter(nodes))
+    visited_mst.add(current)
+    edges = []
+    while len(visited_mst) < len(nodes):
+        # find minimal edge connecting visited_mst to unvisited nodes
+        best = None
+        best_cost = None
+        for u in visited_mst:
+            for v in nodes:
+                if v in visited_mst:
+                    continue
+                cost = md(u, v)
+                if best is None or cost < best_cost:
+                    best = (u, v)
+                    best_cost = cost
+        mst_cost += best_cost
+        visited_mst.add(best[1])
+
+    return min_to_corner + mst_cost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -456,8 +491,29 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+
+    # Fast check: no food
+    foods = foodGrid.asList()
+    if not foods:
+        return 0
+
+    # Use cached maze distances to avoid repeated expensive searches
+    # Key format: ('md', p1, p2)
+    heurInfo = problem.heuristicInfo
+
+    maxDist = 0
+    for food in foods:
+        key = (position, food)
+        if key in heurInfo:
+            dist = heurInfo[key]
+        else:
+            # mazeDistance is exact shortest-path length (uses BFS)
+            dist = mazeDistance(position, food, problem.startingGameState)
+            heurInfo[key] = dist
+        if dist > maxDist:
+            maxDist = dist
+
+    return maxDist
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -487,8 +543,9 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Solve AnyFoodSearchProblem using BFS to get the shortest path to the
+        # nearest food (in terms of number of actions).
+        return search.bfs(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -521,10 +578,9 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         The state is Pacman's position. Fill this in with a goal test that will
         complete the problem definition.
         """
-        x,y = state
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        x, y = state
+        # state is a position (x,y). Goal is True if there's food at that pos.
+        return self.food[x][y]
 
 def mazeDistance(point1, point2, gameState):
     """
