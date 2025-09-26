@@ -363,28 +363,29 @@ def cornersHeuristic(state, problem):
         if not visited[idx]:
             remaining.append(corner)
 
-    # no remaining corners -> heuristic is 0
+    #no remaining corners implies heuristic is 0
     if not remaining:
         return 0
 
-    # helper: Manhattan distance
+    #helper function, Manhattan distance
     def md(p, q):
         return util.manhattanDistance(p, q)
 
-    # distance from current position to closest remaining corner
+    #distance from current position to closest remaining corner
     min_to_corner = min(md(position, c) for c in remaining)
 
-    # compute MST (Prim) length over remaining corners using Manhattan distances
-    # since there are at most 4 corners, this is cheap
+    #compute MST using Manhattan distances
     mst_cost = 0
     nodes = set(remaining)
-    # start MST from an arbitrary node
+
+    #start MST from arbitrary node
     visited_mst = set()
     current = next(iter(nodes))
     visited_mst.add(current)
     edges = []
+
     while len(visited_mst) < len(nodes):
-        # find minimal edge connecting visited_mst to unvisited nodes
+        #find minimal edge connecting visited_mst to unvisited nodes
         best = None
         best_cost = None
         for u in visited_mst:
@@ -463,42 +464,16 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchType = FoodSearchProblem
 
 def foodHeuristic(state, problem):
-    """
-    Your heuristic for the FoodSearchProblem goes here.
 
-    This heuristic must be consistent to ensure correctness.  First, try to come
-    up with an admissible heuristic; almost all admissible heuristics will be
-    consistent as well.
-
-    If using A* ever finds a solution that is worse uniform cost search finds,
-    your heuristic is *not* consistent, and probably not admissible!  On the
-    other hand, inadmissible or inconsistent heuristics may find optimal
-    solutions, so be careful.
-
-    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a Grid
-    (see game.py) of either True or False. You can call foodGrid.asList() to get
-    a list of food coordinates instead.
-
-    If you want access to info like walls, capsules, etc., you can query the
-    problem.  For example, problem.walls gives you a Grid of where the walls
-    are.
-
-    If you want to *store* information to be reused in other calls to the
-    heuristic, there is a dictionary called problem.heuristicInfo that you can
-    use. For example, if you only want to count the walls once and store that
-    value, try: problem.heuristicInfo['wallCount'] = problem.walls.count()
-    Subsequent calls to this heuristic can access
-    problem.heuristicInfo['wallCount']
-    """
+    #state is position and grid
     position, foodGrid = state
 
-    # Fast check: no food
+    #check if there is no food left
     foods = foodGrid.asList()
     if not foods:
         return 0
 
-    # Use cached maze distances to avoid repeated expensive searches
-    # Key format: ('md', p1, p2)
+    #use cached maze distances to avoid repeated expensive searches
     heurInfo = problem.heuristicInfo
 
     maxDist = 0
@@ -507,7 +482,7 @@ def foodHeuristic(state, problem):
         if key in heurInfo:
             dist = heurInfo[key]
         else:
-            # mazeDistance is exact shortest-path length (uses BFS)
+            #mazeDistance is exact shortest-path length using BFS
             dist = mazeDistance(position, food, problem.startingGameState)
             heurInfo[key] = dist
         if dist > maxDist:
@@ -533,18 +508,14 @@ class ClosestDotSearchAgent(SearchAgent):
         print('Path found with cost %d.' % len(self.actions))
 
     def findPathToClosestDot(self, gameState):
-        """
-        Returns a path (a list of actions) to the closest dot, starting from
-        gameState.
-        """
-        # Here are some useful elements of the startState
+
+        #info from start state
         startPosition = gameState.getPacmanPosition()
         food = gameState.getFood()
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        # Solve AnyFoodSearchProblem using BFS to get the shortest path to the
-        # nearest food (in terms of number of actions).
+        #use BFS to find the shortest path to the nearest food
         return search.bfs(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
